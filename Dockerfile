@@ -1,25 +1,41 @@
-name: Build and Push to Docker Hub
+FROM pytorch/pytorch:2.4.0-cuda12.4-cudnn9-devel
 
-on:
-  push:
-    branches: [ "main" ]
+# System-Abhängigkeiten installieren
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y \
+    git \
+    git-lfs \
+    curl \
+    wget \
+    ffmpeg \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+WORKDIR /workspace
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+# ComfyUI installieren
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git .
 
-    - name: Build and Push Docker Image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: mikechandler/runpod-comfyui-nextgen:latest
+# Python-Abhängigkeiten für ComfyUI installieren
+RUN pip install --no-cache-dir -r requirements.txt
+
+# GPU-Optimierungen installieren
+RUN pip install --no-cache-dir setuptools wheel
+
+# Custom Nodes installieren
+WORKDIR /workspace/custom_nodes
+RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git
+RUN git clone https://github.com/Lightricks/LTX-Video.git || true
+
+# Zurück zum Hauptverzeichnis
+WORKDIR /workspace
+
+# Hugging Face Hub CLI installieren
+RUN pip install --no-cache-dir huggingface_hub[cli]
+
+# Startup-Skripte ausführbar machen
+EXPOSE 8188 8888
+
+CMD ["bash", "/workspace/start.sh"]
