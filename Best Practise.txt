@@ -1,0 +1,14 @@
+Um die Automatisierung der Modellinstallation perfekt zu strukturieren und Fehler auf RunPod zu vermeiden, sollten Sie folgendes Best-Practice-Vorgehen für Ihr GitHub-Repository wählen:
+
+1. **Modulare Trennung von Download und Execution:**
+   Das Skript `start.sh` agiert als Orchestrator. Es sorgt dafür, dass Hugging Face Authentifizierungen vorgenommen werden, bevor PyTorch-Inferenz-Engines geladen werden. Verwenden Sie stets `huggingface_hub` in Kombination mit `HF_HUB_ENABLE_HF_TRANSFER=1`, um maximale Downloadgeschwindigkeiten (bis zu 120MB/s+) auf RunPod Instanzen zu erzielen.
+
+2. **Strukturierung des Git-Repositorys:**
+   Legen Sie folgende Struktur an:
+   - `/Dockerfile` (Deklariert CUDA & Systempakete)
+   - `/requirements.txt` (Spezifiziert exakte Python Packages)
+   - `/start.sh` (Setzt SSH auf, führt Downloader aus und startet ComfyUI & den Worker im Hintergrund)
+   - `/handler.py` (Laufende Bridge-Instanz, die API-Aufrufe an das lokale ComfyUI weitergibt)
+
+3. **Caching-Strategie:**
+   Die Modelle werden in `/workspace/ComfyUI/models/...` abgelegt. Wenn Sie bei RunPod ein persistentes Volume auf `/workspace` mounten, überleben die Modelle den Container-Reboot. Der Downloader prüft dies automatisch und lädt Dateien nur herunter, wenn sie physisch fehlen.
