@@ -2,7 +2,7 @@ FROM pytorch/pytorch:2.4.0-cuda12.4-cudnn9-devel
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# System-Pakete installieren
+# System-Pakete installieren (inklusive Jupyter-Abhängigkeiten)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     git-lfs \
@@ -14,28 +14,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# WICHTIG: Wir bauen alles in /app, damit das RunPod-Volume es nicht überschreibt!
 WORKDIR /app
 
 # ComfyUI klonen & installieren
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir setuptools wheel
+RUN pip install --no-cache-dir setuptools wheel jupyterlab
 
-# Custom Nodes installieren
+# Die absoluten Umsatz-Bringer Custom Nodes direkt vorinstallieren
 WORKDIR /app/custom_nodes
 RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git
 RUN git clone https://github.com/Lightricks/LTX-Video.git || true
+RUN git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
+RUN git clone https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet.git
 
-# Skripte direkt nach /app kopieren
+# Skripte kopieren
 WORKDIR /app
 RUN pip install --no-cache-dir huggingface_hub[cli]
 
-# Wir kopieren die Skripte beim Build mit rein
 COPY start.sh /app/start.sh
 COPY download_models.py /app/download_models.py
 
-EXPOSE 8188
+# Ports für ComfyUI (8188) und Jupyter Lab (8888) öffnen
+EXPOSE 8188 8888
 
-# Wir starten das Skript jetzt sicher aus /app/
 CMD ["bash", "/app/start.sh"]
