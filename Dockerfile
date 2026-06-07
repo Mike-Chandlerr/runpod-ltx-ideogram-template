@@ -6,11 +6,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git git-lfs wget curl ffmpeg libgl1-mesa-glx libglib2.0-0 build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Zurück auf workspace!
 WORKDIR /workspace
 
+# ComfyUI klonen & installieren
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git .
-RUN pip install --no-cache-dir r requirements.txt setuptools wheel jupyterlab
+# HIER WAR DER FEHLER: Jetzt sauber mit -r angegeben
+RUN pip install --no-cache-dir -r requirements.txt setuptools wheel jupyterlab
 
 WORKDIR /workspace/custom_nodes
 RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git
